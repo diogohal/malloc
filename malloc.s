@@ -8,10 +8,29 @@ _start:
     call topoHeap
     movq %rax, topoInicialHeap
     
-    # Aloca um espaço de 100 bytes na heap
+    # Testes
     movq $100, %rdi
     call alocaMem
-    call topoHeap
+    movq %rax, %r8
+
+    movq $200, %rdi
+    call alocaMem
+    movq %rax, %r9
+
+    movq $300, %rdi
+    call alocaMem
+    movq %rax, %r10
+
+    movq %r8, %rdi
+    call liberaMem
+
+    movq %r9, %rdi
+    call liberaMem
+
+    movq $350, %rdi
+    call alocaMem
+    movq %rax, %r13
+
     
     # Desaloca o espaço de memória alocado
     call finalizaAlocador
@@ -54,6 +73,7 @@ finalizaAlocador:
 
 
 # Função que aloca n bytes de memória na heap
+# Variáveis se não tiver blocos livres:
 # %rdi = quantidade de bytes a ser alocado
 # %rax = posição do topo corrente da pilha
 # %rbx = %rdi + 16 das variáveis de controle ocupado e tamanho
@@ -61,9 +81,12 @@ finalizaAlocador:
 # --------------------------------------------------
 alocaMem:
     # Se tiver blocos livres, aloca esse espaço :)
+    pushq %rdi
     call procuraBlocoLivre
-    cmpq %rax, $-1
-    jne 
+    popq %rdi
+    cmpq $0, %rax
+    jne alocaBlocoLivre
+
     # Define o valor de %rax
     pushq %rdi # salva o valor de rdi na pilha
     call topoHeap
@@ -93,21 +116,30 @@ alocaMem:
 
 # Função que procura um bloco na heap livre
 # %rdi = quantidade de bytes necessários
+# %rax = variável iterativa topoInicialHeap até topo atual
+# %rbx = auxiliar
+# %rcx = topo atual da heap
+# retorno %rax = endereço do bloco livre
 # --------------------------------------------------
 procuraBlocoLivre:
+    pushq %rdi # salva o valor de rdi na pilha
+    call topoHeap
+    popq %rdi # recupera o valor de rdi da pilha
+    movq %rax, %rcx
     movq topoInicialHeap, %rax
 
 # Loop que procura blocos livres na heap
 loop_ProcuraBlocoLivre:
     # Se ultrapassou o topoInicialHeap
-    cmpq %rax, topoInicialHeap
-    jge fimLoopAchou_ProcuraBlocoLivre
+    cmpq %rcx, %rax
+    jge fimLoopNaoAchou_ProcuraBlocoLivre
     # Se bloco está ocupado
-    cmpq (%rax), $0
-    jeq loopOcupado_ProcuraBlocoLivre
+    cmpq $1, (%rax)
+    je loopOcupado_ProcuraBlocoLivre
     # Se bloco é menor
     addq $8, %rax
-    cmpq (%rax), %rdi
+    cmpq %rdi, (%rax)
+    movq (%rax), %rdx
     jl loopEspacoMenor_ProcuraBlocoLivre
     # Senao, achou
     jmp fimLoopAchou_ProcuraBlocoLivre
@@ -116,18 +148,20 @@ loop_ProcuraBlocoLivre:
 loopOcupado_ProcuraBlocoLivre:
     addq $8, %rax
     movq (%rax), %rbx
+    addq $8, %rax # pula a variável de controle
     addq %rbx, %rax
     jmp loop_ProcuraBlocoLivre
 
 # Se o espaço do bloco for menor que o necessário, pula para o próximo bloco
 loopEspacoMenor_ProcuraBlocoLivre:
     movq (%rax), %rbx
+    addq $8, %rax # pula a variável de controle
     addq %rbx, %rax
-    jump loop_ProcuraBlocoLivre
+    jmp loop_ProcuraBlocoLivre
 
 # Se não achou bloco livre, retorna -1
 fimLoopNaoAchou_ProcuraBlocoLivre:
-    movq $-1, %rax
+    movq $0, %rax
     ret
 
 # Achou bloco livre, retorna o endereço de memória
@@ -136,4 +170,17 @@ fimLoopAchou_ProcuraBlocoLivre:
     ret
 # --------------------------------------------------
 
+# Função que aloca um bloco livre já existente
+# rax = endereço inicial do bloco livre
+# --------------------------------------------------
+alocaBlocoLivre:
+    movq $1, (%rax)
+    ret
+# --------------------------------------------------
 
+# Função que libera um bloco de memória
+# rdi = endereço do bloco de memória
+# --------------------------------------------------
+liberaMem:
+    movq $0, (%rdi)
+    ret
