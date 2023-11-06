@@ -7,5 +7,5 @@ Passos:
 3. libera memória
 4. aloca memória
 
-+ fusão de nós livres
 + first fit
++ fusão de nós livres

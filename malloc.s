@@ -3,7 +3,6 @@
 .section .text
 .globl _start
 _start:
-
     # Obtém o valor original do topo da heap
     call topoHeap
     movq %rax, topoInicialHeap
@@ -13,28 +12,30 @@ _start:
     call alocaMem
     movq %rax, %r8
 
-    movq $200, %rdi
+    movq $100, %rdi
     call alocaMem
     movq %rax, %r9
 
-    movq $300, %rdi
+    movq $100, %rdi
     call alocaMem
     movq %rax, %r10
 
     movq %r8, %rdi
     call liberaMem
 
+    movq %r10, %rdi
+    call liberaMem
+
     movq %r9, %rdi
     call liberaMem
 
-    movq $350, %rdi
+    movq $300, %rdi
     call alocaMem
-    movq %rax, %r13
+    movq %rax, %r12
 
-    
+
     # Desaloca o espaço de memória alocado
     call finalizaAlocador
-    call topoHeap
 
     # Sai do programa
     movq $60, %rax
@@ -183,4 +184,70 @@ alocaBlocoLivre:
 # --------------------------------------------------
 liberaMem:
     movq $0, (%rdi)
+    call fusaoBlocos
     ret
+
+
+# Função que faz a fusão de nós livres, se houver
+# %rdi = endereço de memória do bloco liberado
+# %rax = endereço do bloco da frente
+# %rbx = o endereço do bloco de trás
+#
+# --------------------------------------------------
+fusaoBlocos:
+    movq topoInicialHeap, %rbx
+
+while_FusaoBlocos:
+    cmpq %rbx, %rdi
+    jle fimWhile_FusaoBlocos
+    movq %rbx, %rcx
+    addq $8, %rbx
+    movq (%rbx), %rdx
+    addq %rdx, %rbx
+    addq $8, %rbx
+    jmp while_FusaoBlocos
+
+fimWhile_FusaoBlocos:
+    # Se for o primeiro bloco a ser liberado, não existe a esquerda
+    cmpq %rdi, topoInicialHeap
+    je juncaoDireita
+    movq %rcx, %rbx
+    # Junção do bloco da esquerda
+    cmpq $1, (%rbx) 
+    je juncaoDireita
+    addq $8, %rdi
+    addq $8, %rbx
+    movq (%rdi), %rdx
+    addq %rdx, (%rbx)
+    addq $16, (%rbx)
+    subq $8, %rdi
+    subq $8, %rbx
+
+juncaoDireita:
+    pushq %rdi
+    pushq %rax
+    call topoHeap
+    movq %rax, %rdx # rdx = topo atual da heap
+    popq %rax
+    popq %rdi
+    
+    movq %rdi, %rax
+    addq $16, %rax
+    addq $8, %rdi
+    addq (%rdi), %rax
+    # Se ultrapassar o topo da heap, não existe a direita
+    cmpq %rax, %rdx
+    je retorno
+    # Verifica se o bloco está livre
+    cmpq $1, (%rax) 
+    je retorno
+    # Junção do bloco da direita
+    addq $8, %rax
+    addq $8, %rbx
+    movq (%rax), %rdx
+    addq %rdx, (%rbx)
+    addq $(16), (%rbx)
+    subq $8, %rbx
+retorno:
+    ret
+# --------------------------------------------------
