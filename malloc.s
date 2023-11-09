@@ -186,35 +186,37 @@ liberaMem:
     movq $0, (%rdi)
     call fusaoBlocos
     ret
+# --------------------------------------------------
 
 
 # Função que faz a fusão de nós livres, se houver
 # %rdi = endereço de memória do bloco liberado
 # %rax = endereço do bloco da frente
 # %rbx = o endereço do bloco de trás
-#
 # --------------------------------------------------
 fusaoBlocos:
     movq topoInicialHeap, %rbx
 
+# Loop para achar o bloco da esquerda
 while_FusaoBlocos:
     cmpq %rbx, %rdi
-    jle fimWhile_FusaoBlocos
-    movq %rbx, %rcx
+    jle juncaoEsquerda # Se passar o endereço do parâmetro, o bloco anterior é o da esquerda
+    movq %rbx, %rcx # Salva o bloco anterior
     addq $8, %rbx
     movq (%rbx), %rdx
     addq %rdx, %rbx
     addq $8, %rbx
     jmp while_FusaoBlocos
 
-fimWhile_FusaoBlocos:
-    # Se for o primeiro bloco a ser liberado, não existe a esquerda
+juncaoEsquerda:
+    # Verifica se é possível fazer a junção
     cmpq %rdi, topoInicialHeap
-    je juncaoDireita
+    je juncaoDireita # Se o bloco da esquerda for o topo inicial, não existe junção
     movq %rcx, %rbx
-    # Junção do bloco da esquerda
     cmpq $1, (%rbx) 
-    je juncaoDireita
+    je juncaoDireita # Se o bloco da esquerda estiver ocupado, não faz a junção
+
+    # Faz a junção com o bloco da esquerda
     addq $8, %rdi
     addq $8, %rbx
     movq (%rdi), %rdx
@@ -224,6 +226,7 @@ fimWhile_FusaoBlocos:
     subq $8, %rbx
 
 juncaoDireita:
+    # Pega o valor do topo atual da heap
     pushq %rdi
     pushq %rax
     call topoHeap
@@ -231,17 +234,17 @@ juncaoDireita:
     popq %rax
     popq %rdi
     
+    # Verifica se é possível fazer a junção
     movq %rdi, %rax
     addq $16, %rax
     addq $8, %rdi
     addq (%rdi), %rax
-    # Se ultrapassar o topo da heap, não existe a direita
     cmpq %rax, %rdx
-    je retorno
-    # Verifica se o bloco está livre
+    je retorno # Se ultrapassar o topo da heap, não existe a direita
     cmpq $1, (%rax) 
-    je retorno
-    # Junção do bloco da direita
+    je retorno # Se o bloco da direita não estiver livre, pula para o retorno
+
+    # Faz a junção com o bloco da direita
     addq $8, %rax
     addq $8, %rbx
     movq (%rax), %rdx
