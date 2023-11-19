@@ -1,5 +1,7 @@
 .section .data
     topoInicialHeap: .quad 0
+    secao_gerencial: .string "################"
+    prompt: .string "################"
 .section .text
 .globl _start
 _start:
@@ -36,6 +38,11 @@ _start:
 
     # Desaloca o espaço de memória alocado
     call finalizaAlocador
+
+    movq $prompt, %rdi
+    call printf
+
+
 
     # Sai do programa
     movq $60, %rax
@@ -254,3 +261,22 @@ juncaoDireita:
 retorno:
     ret
 # --------------------------------------------------
+
+# rax = topo atual
+# rbx = topo inicial
+# rcx = 1 se ocupado e 0 se não estiver
+# rdx = tamanho do bloco
+imprimeMapa:
+    movq topoInicialHeap, %rbx
+    call topoHeap
+
+while_imprimeMapa:
+    cmpq %rax, %rbx
+    je retorno_imprimeMapa
+    movq (%rbx), %rcx # salva ocupado
+    addq $8, %rbx
+    movq (%rbx), %rdx # salva tamanho
+    subq $8, %rbx # retorna para posição inicial do bloco
+
+retorno_imprimeMapa:
+    ret
