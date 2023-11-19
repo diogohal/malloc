@@ -1,7 +1,10 @@
 .section .data
     topoInicialHeap: .quad 0
-    secao_gerencial: .string "################"
-    prompt: .string "################"
+    gerencial: .string "################\n"
+    alocado: .string "+"
+    desalocado: .string "-"
+    buffer: .string "\n"
+
 .section .text
 .globl _start
 _start:
@@ -9,40 +12,41 @@ _start:
     call topoHeap
     movq %rax, topoInicialHeap
     
+
     # Testes
-    movq $100, %rdi
+    call imprimeMapa
+    movq $10, %rdi
     call alocaMem
     movq %rax, %r8
-
-    movq $100, %rdi
+    
+    call imprimeMapa
+    movq $10, %rdi
     call alocaMem
     movq %rax, %r9
-
-    movq $100, %rdi
+    
+    call imprimeMapa
+    movq $5, %rdi
     call alocaMem
     movq %rax, %r10
-
-    movq %r8, %rdi
-    call liberaMem
-
-    movq %r10, %rdi
-    call liberaMem
+    call imprimeMapa
 
     movq %r9, %rdi
     call liberaMem
 
-    movq $300, %rdi
-    call alocaMem
-    movq %rax, %r12
+    call imprimeMapa
+
+    movq %r10, %rdi
+    call liberaMem
+
+    call imprimeMapa
+
+
+    movq %r8, %rdi
+    call liberaMem
 
 
     # Desaloca o espaço de memória alocado
     call finalizaAlocador
-
-    movq $prompt, %rdi
-    call printf
-
-
 
     # Sai do programa
     movq $60, %rax
@@ -269,14 +273,62 @@ retorno:
 imprimeMapa:
     movq topoInicialHeap, %rbx
     call topoHeap
+    jmp while_imprimeMapa
 
 while_imprimeMapa:
     cmpq %rax, %rbx
-    je retorno_imprimeMapa
+    jge retorno_imprimeMapa
     movq (%rbx), %rcx # salva ocupado
     addq $8, %rbx
     movq (%rbx), %rdx # salva tamanho
     subq $8, %rbx # retorna para posição inicial do bloco
 
+    pushq %rax
+    pushq %rdx
+    pushq %rcx
+    # Imprime seção gerencial
+    movq $1, %rax   # serviço do syscall
+    movq $1, %rdi   # stdout
+    movq $16, %rdx   # tamanho do buffer
+    movq $gerencial, %rsi  # string
+    syscall 
+    popq %rcx
+    popq %rdx
+    popq %rax
+
+    addq $16, %rbx
+    addq %rdx, %rbx
+    cmpq $0, %rcx   # if se bloco está desalocado
+    je if_desalocado
+
+if_alocado:
+    movq $alocado, %rsi
+    jmp for_imprimeMapa
+if_desalocado:
+    movq $desalocado, %rsi
+
+for_imprimeMapa:
+    cmpq $0, %rdx
+    je while_imprimeMapa
+
+    pushq %rax
+    pushq %rdx
+    # Imprime se está ocupado
+    movq $1, %rax   # serviço do syscall
+    movq $1, %rdi   # stdout
+    movq $1, %rdx   # tamanho do buffer
+    syscall
+    popq %rdx
+    popq %rax
+
+    subq $1, %rdx
+    jmp for_imprimeMapa
+    
 retorno_imprimeMapa:
+    # Imprime \n
+    movq $1, %rax   # serviço do syscall
+    movq $1, %rdi   # stdout
+    movq $1, %rdx   # tamanho do buffer
+    movq $buffer, %rsi  # string
+    syscall
     ret
