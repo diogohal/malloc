@@ -1,4 +1,4 @@
-// Protótipos (seção 6.1.2 e Projeto de Implementação 6.2)
+ // Protótipos (seção 6.1.2 e Projeto de Implementação 6.2)
 void iniciaAlocador();   // Executa syscall brk para obter o endereço do topo
                          // corrente da heap e o armazena em uma
                          // variável global, topoInicialHeap.

@@ -2,7 +2,7 @@
 #include "malloc.h"
 
 int main (long int argc, char** argv) {
-  void *a, *b;
+  void *a, *b, *c;
 
   iniciaAlocador();               // Impressão esperada
   imprimeMapa();                  // <vazio>
@@ -16,5 +16,8 @@ int main (long int argc, char** argv) {
   liberaMem(b);                   // ################----------------------------
                                   // ou
                                   // <vazio>
+  imprimeMapa();
+  c = (void *) alocaMem(15);
+  imprimeMapa();
   finalizaAlocador();
 }

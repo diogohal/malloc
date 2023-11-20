@@ -6,53 +6,11 @@
     buffer: .string "\n"
 
 .section .text
-.globl _start
-_start:
-    # Obtém o valor original do topo da heap
-    call topoHeap
-    movq %rax, topoInicialHeap
-    
-
-    # Testes
-    call imprimeMapa
-    movq $10, %rdi
-    call alocaMem
-    movq %rax, %r8
-    
-    call imprimeMapa
-    movq $10, %rdi
-    call alocaMem
-    movq %rax, %r9
-    
-    call imprimeMapa
-    movq $5, %rdi
-    call alocaMem
-    movq %rax, %r10
-    call imprimeMapa
-
-    movq %r9, %rdi
-    call liberaMem
-
-    call imprimeMapa
-
-    movq %r10, %rdi
-    call liberaMem
-
-    call imprimeMapa
-
-
-    movq %r8, %rdi
-    call liberaMem
-
-
-    # Desaloca o espaço de memória alocado
-    call finalizaAlocador
-
-    # Sai do programa
-    movq $60, %rax
-    movq $0, %rdi
-    syscall
-
+.globl iniciaAlocador
+.globl liberaMem
+.globl finalizaAlocador
+.globl alocaMem
+.globl imprimeMapa
 
 # Função que obtém o endereço atual do topo da heap 
 # e armazena em topoInicialHeap
